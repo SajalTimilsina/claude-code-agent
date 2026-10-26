@@ -170,3 +170,52 @@ weekday(2024, 8, 20); // -> { index: 2, short: 'Tue', long: 'Tuesday' }
 
 `weekday(y, m, d)` throws a `RangeError` for invalid dates. Helpers exported for
 reuse/testing: `isValidDate`, `daysInMonth`, `isLeapYear`.
+
+## Date Arithmetic
+
+`dateMath.js` adds or subtracts whole days or months from a date, finds the
+next occurrence of a given weekday, and counts business days (Mon-Fri)
+between two dates. Month addition clamps to the last day of the target
+month (Jan 31 + 1 month -> Feb 28, or Feb 29 in a leap year).
+
+### Usage (CLI)
+
+```bash
+node dateMath.js add-days   YYYY-MM-DD <n>
+node dateMath.js add-months YYYY-MM-DD <n>
+node dateMath.js next-weekday YYYY-MM-DD <weekday:0-6>
+node dateMath.js business-days YYYY-MM-DD YYYY-MM-DD
+```
+
+Examples:
+
+```bash
+$ node dateMath.js add-days 2024-01-31 1
+Result: 2024-02-01
+
+$ node dateMath.js add-months 2024-01-31 1
+Result: 2024-02-29
+
+$ node dateMath.js next-weekday 2024-01-31 1
+Next Monday: 2024-02-05
+
+$ node dateMath.js business-days 2024-01-08 2024-04-01
+Business days: 60
+```
+
+Weekday numbers are `0 = Sunday` … `6 = Saturday`.
+
+### Usage (module)
+
+```js
+const { addDays, addMonths, nextWeekday, businessDaysBetween } = require('./dateMath.js');
+
+addDays(2024, 1, 31, 1);                    // -> { year: 2024, month: 2, day: 1 }
+addMonths(2024, 1, 31, 1);                 // -> { year: 2024, month: 2, day: 29 }
+nextWeekday(2024, 1, 31, 1);               // -> { year: 2024, month: 2, day: 5 } (next Monday)
+businessDaysBetween(2024, 1, 8, 2024, 4, 1); // -> 60
+```
+
+All functions throw a `RangeError` for invalid dates or deltas. Helpers
+exported for reuse/testing: `weekdayIndex`, `isValidDate`, `daysInMonth`,
+`isLeapYear`, `WEEKDAYS`.
