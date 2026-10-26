@@ -170,3 +170,40 @@ weekday(2024, 8, 20); // -> { index: 2, short: 'Tue', long: 'Tuesday' }
 
 `weekday(y, m, d)` throws a `RangeError` for invalid dates. Helpers exported for
 reuse/testing: `isValidDate`, `daysInMonth`, `isLeapYear`.
+
+## Ordinal Date Converter
+
+`ordinalDate.js` converts between a calendar date (year / month / day) and its
+**ordinal** — ISO day-of-year — form: the 1-based position of the day within its
+year (Jan 1 is day 1; Dec 31 is day 365 in a common year or day 366 in a leap
+year). It works in both directions.
+
+### Usage (CLI)
+
+```bash
+node ordinalDate.js <date:YYYY-MM-DD | ordinal:YYYY-DDD>
+```
+
+Examples:
+
+```bash
+$ node ordinalDate.js 2024-08-20
+Calendar: 2024-08-20  ->  Ordinal: 2024-233 (day 233 of 366)
+
+$ node ordinalDate.js 2024-233
+Ordinal: 2024-233  ->  Calendar: 2024-08-20
+```
+
+### Usage (module)
+
+```js
+const { toOrdinal, fromOrdinal } = require('./ordinalDate.js');
+
+toOrdinal(2024, 8, 20);   // -> { year: 2024, dayOfYear: 233, iso: '2024-233' }
+fromOrdinal(2024, 233);   // -> { year: 2024, month: 8, day: 20, iso: '2024-233' }
+```
+
+Both functions throw a `RangeError` for invalid input (`toOrdinal` for an
+invalid calendar date; `fromOrdinal` for a day-of-year that does not exist in
+that year). Helpers exported for reuse/testing: `isValidDate`, `daysInMonth`,
+`daysInYear`, `isLeapYear`.
