@@ -136,3 +136,37 @@ formatRelative(2024, 8, 20);                // -> 'today' (if run on that day)
 ```
 
 Both functions throw a `RangeError` for invalid dates.
+
+## Weekday Calculator
+
+`weekday.js` returns the day of the week on which an AD (Gregorian) date falls —
+as a number (`0 = Sunday` … `6 = Saturday`), a short name (`Sun` … `Sat`) and a
+long name (`Sunday` … `Saturday`). It is computed with Zeller's congruence, so
+it works directly on calendar components with no time-zone or epoch arithmetic.
+
+### Usage (CLI)
+
+```bash
+node weekday.js <date:YYYY-MM-DD>
+```
+
+Examples:
+
+```bash
+$ node weekday.js 2024-08-20
+2024-8-20 was a Tuesday (Tue, index 2)
+
+$ node weekday.js 1970-01-01
+1970-1-1 was a Thursday (Thu, index 4)
+```
+
+### Usage (module)
+
+```js
+const { weekday } = require('./weekday.js');
+
+weekday(2024, 8, 20); // -> { index: 2, short: 'Tue', long: 'Tuesday' }
+```
+
+`weekday(y, m, d)` throws a `RangeError` for invalid dates. Helpers exported for
+reuse/testing: `isValidDate`, `daysInMonth`, `isLeapYear`.
