@@ -136,3 +136,44 @@ formatRelative(2024, 8, 20);                // -> 'today' (if run on that day)
 ```
 
 Both functions throw a `RangeError` for invalid dates.
+
+## Weekday Calculator
+
+`weekday.js` determines the day of the week (Sunday–Saturday) for any AD
+(Gregorian) date using the Sakamoto algorithm — a pure integer-arithmetic
+formula with no lookup tables. It also provides helpers for comparing
+weekdays and finding the next occurrence of a given weekday.
+
+### Usage (CLI)
+
+```bash
+node weekday.js <date:YYYY-MM-DD> [--next WEEKDAY_INDEX]
+```
+
+`WEEKDAY_INDEX` is 0=Sunday through 6=Saturday.
+
+Examples:
+
+```bash
+$ node weekday.js 2024-07-04
+2024-07-04 is a Thursday (index 4)
+
+$ node weekday.js 2024-01-01 --next 2
+2024-01-01 is a Monday (index 1)
+Next Tuesday: in 1 day
+```
+
+### Usage (module)
+
+```js
+const { getWeekday, isSameWeekday, daysUntilNextWeekday } = require('./weekday.js');
+
+getWeekday(2024, 7, 4);
+// -> { index: 4, name: 'Thursday' }
+
+isSameWeekday(2024, 1, 1, 2024, 1, 8);   // both Mondays -> true
+daysUntilNextWeekday(2024, 1, 1, 2);     // next Tuesday from Monday -> 1
+```
+
+`getWeekday(y, m, d)` throws a `RangeError` for invalid dates.
+Helpers exported for reuse/testing: `isValidDate`, `daysInMonth`, `isLeapYear`.
