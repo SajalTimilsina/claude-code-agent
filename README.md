@@ -46,6 +46,45 @@ dates or when the reference date precedes the birthdate.
 
 Helpers exported for reuse/testing: `isValidDate`, `daysInMonth`, `isLeapYear`.
 
+## Date Difference Calculator
+
+`dateDiff.js` is a companion module that computes the difference between any
+two Gregorian dates: the signed total day count, plus a whole-years /
+whole-months / remaining-days breakdown in the direction of travel. It reuses
+the date-validation helpers from `age.js`.
+
+### Usage (CLI)
+
+```bash
+node dateDiff.js <from:YYYY-MM-DD> <to:YYYY-MM-DD>
+```
+
+Examples:
+
+```bash
+$ node dateDiff.js 1990-05-15 2024-08-20
+Difference: 34 years, 3 months, 5 days
+Total days: 12516
+
+$ node dateDiff.js 2024-03-10 2024-03-01   # reversed order -> negative days
+Difference: 9 days
+Total days: -9
+```
+
+### Usage (module)
+
+```js
+const { dateDiff } = require('./dateDiff.js');
+
+dateDiff(1990, 5, 15, 2024, 8, 20);
+// -> { days: 12516, years: 34, months: 3, daysLeft: 5,
+//      formatted: '34 years, 3 months, 5 days' }
+```
+
+`dateDiff(fy, fm, fd, ty, tm, td)` throws a `RangeError` for invalid dates.
+The `years`/`months`/`daysLeft` fields are always non-negative; only `days`
+carries the sign of the span.
+
 ### Running tests
 
 Tests use Node's built-in test runner (no dependencies required).
