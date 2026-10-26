@@ -170,3 +170,47 @@ weekday(2024, 8, 20); // -> { index: 2, short: 'Tue', long: 'Tuesday' }
 
 `weekday(y, m, d)` throws a `RangeError` for invalid dates. Helpers exported for
 reuse/testing: `isValidDate`, `daysInMonth`, `isLeapYear`.
+
+## Ordinal Date Calculator
+
+`ordinal-date.js` converts an AD (Gregorian) date to its **ordinal day number**
+within the year (`1 = Jan 1` … `365/366 = Dec 31`) and back. The two operations
+are exact inverses, so they round-trip losslessly for every valid date.
+
+### Usage (CLI)
+
+```bash
+node ordinal-date.js --to YYYY-MM-DD     # date -> ordinal day
+node ordinal-date.js --from YYYY N       # ordinal day -> date
+```
+
+Examples:
+
+```bash
+$ node ordinal-date.js --to 2024-08-20
+2024-8-20 is day 233 of 366 (233)
+
+$ node ordinal-date.js --from 2024 233
+Day 233 of 2024 is Aug 20, 2024 (8/20/2024)
+
+$ node ordinal-date.js --to 2023-12-31
+2023-12-31 is day 365 of 365 (365)
+```
+
+### Usage (module)
+
+```js
+const { toOrdinalDate, fromOrdinalDate } = require('./ordinal-date.js');
+
+toOrdinalDate(2024, 8, 20);
+// -> { year: 2024, ordinal: 233, daysInYear: 366, formatted: 'day 233 of 366' }
+
+fromOrdinalDate(2024, 233);
+// -> { year: 2024, month: 8, day: 20, ordinal: 233, formatted: 'Aug 20, 2024' }
+```
+
+Both functions throw a `RangeError` for invalid dates / ordinals. Note that a
+given calendar date maps to different ordinals in leap vs. common years when it
+falls after February (e.g. Mar 1 is day 61 in 2024 but day 60 in 2023). Helpers
+exported for reuse/testing: `isValidDate`, `daysInMonth`, `isLeapYear`,
+`daysInYear`.
