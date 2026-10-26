@@ -55,3 +55,58 @@ npm test
 # or
 node --test test/
 ```
+
+## Date Formatter
+
+`dateFormat.js` renders an AD (Gregorian) date as a human-friendly string in two
+styles:
+
+- **absolute** — fixed calendar rendering, e.g. `Jan 5, 2024` (or
+  `January 5, 2024` with the long form).
+- **relative** — compared to a reference date (defaults to today), e.g.
+  `today`, `yesterday`, `3 days ago`, `in 2 weeks`, `5 months from now`.
+
+The relative form picks the largest sensible unit (day / week / month / year)
+and uses whole-unit floor division, the common convention for casual
+date formatting. All arithmetic is UTC-based, so results don't depend on the
+local time zone.
+
+### Usage (CLI)
+
+```bash
+node dateFormat.js <date:YYYY-MM-DD> [--ref YYYY-MM-DD] [--long]
+```
+
+Examples:
+
+```bash
+$ node dateFormat.js 2024-08-20 --ref 2024-08-20
+Absolute: Aug 20, 2024
+Relative: today
+
+$ node dateFormat.js 2024-08-17 --ref 2024-08-20
+Absolute: Aug 17, 2024
+Relative: 3 days ago
+
+$ node dateFormat.js 2024-01-05 --long
+Absolute: January 5, 2024
+Relative: ...   # relative to today
+```
+
+### Usage (module)
+
+```js
+const { formatAbsolute, formatRelative } = require('./dateFormat.js');
+
+formatAbsolute(2024, 1, 5);                 // -> 'Jan 5, 2024'
+formatAbsolute(2024, 1, 5, { long: true }); // -> 'January 5, 2024'
+
+// relative to an explicit reference date
+formatRelative(2024, 8, 17, 2024, 8, 20);   // -> '3 days ago'
+
+// relative to today
+formatRelative(2024, 8, 20);                // -> 'today' (if run on that day)
+```
+
+Both functions throw a `RangeError` for invalid dates. Helpers exported for
+reuse/testing: `isValidDate`, `daysInMonth`, `isLeapYear`.
