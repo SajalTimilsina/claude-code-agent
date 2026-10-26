@@ -1,33 +1,64 @@
 'use strict';
 
 /**
- * Date difference calculator for Gregorian (AD) dates.
+ * Date-difference calculator for Gregorian (AD) dates.
  *
- * Given two calendar dates, returns the number of days between them as a
- * signed value (positive when `to` is after `from`, negative when before),
- * plus the whole-year / whole-month / remaining-day breakdown of that span.
+ * Given two dates, returns the span between them as:
+ *   - total days (exact calendar difference)
+ *   - a years / months / days breakdown
+ *   - a human-readable summary string
  *
- * The calculation uses calendar arithmetic on UTC components only, so it is
- * independent of the machine's local time zone. Reuses the date-validation
- * helpers from ./age.js rather than duplicating them.
+ * All arithmetic is done on UTC components only, so results are independent
+ * of the machine's local time zone.
  */
 
-const { isValidDate } = require('./age.js');
+const MIN_YEAR = 1; // AD year range we accept
+const MAX_YEAR = 9999;
+
+/** True when y/m/d form a real Gregorian calendar date. */
+function isValidDate(y, m, d) {
+  if (!Number.isInteger(y) || !Number.isInteger(m) || !Number.isInteger(d)) return false;
+  if (y < MIN_YEAR || y > MAX_YEAR) return false;
+  if (m < 1 || m > 12) return false;
+  const dim = daysInMonth(y, m);
+  return d >= 1 && d <= dim;
+}
+
+/** Number of days in month `m` (1-12) of year `y`, accounting for leap years. */
+function daysInMonth(y, m) {
+  switch (m) {
+    case 1: case 3: case 5: case 7: case 8: case 10: case 12:
+      return 31;
+    case 4: case 6: case 9: case 11:
+      return 30;
+    case 2:
+      return isLeapYear(y) ? 29 : 28;
+    default:
+      return 0;
+  }
+}
+
+/** Gregorian leap-year rule. */
+function isLeapYear(y) {
+  return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+}
 
 /**
  * Compute the difference between two dates.
  *
+ * The result always describes the span from the earlier date to the later
+ * date, regardless of argument order; `direction` records which argument was
+ * later. When `from` precedes `to`, direction is "forward"; otherwise it is
+ * "backward".
+ *
  * @param {number} fy From year   (AD)
  * @param {number} fm From month  (1-12)
  * @param {number} fd From day    (1-31)
- * @param {number} ty To year     (AD)
- * @param {number} tm To month    (1-12)
- * @param {number} td To day      (1-31)
- * @returns {{days:number, years:number, months:number, daysLeft:number, formatted:string}}
- *   - `days`: total signed day count (`to - from`); 0 when the dates are equal.
- *   - `years`/`months`/`daysLeft`: whole-calendar breakdown of the span in the
- *     direction of travel (always non-negative).
- *   - `formatted`: e.g. "5 days", "1 year, 2 months, 3 days".
+ * @param {number} ty To year
+ * @param {number} tm To month
+ * @param {number} td To day
+ * @returns {{years:number, months:number, days:number, totalDays:number,
+ *            direction:"forward"|"backward", formatted:string}}
  * @throws {RangeError} if either date is invalid.
  */
 function dateDiff(fy, fm, fd, ty, tm, td) {
@@ -38,71 +69,43 @@ function dateDiff(fy, fm, fd, ty, tm, td) {
     throw new RangeError(`Invalid end date: ${ty}-${tm}-${td}`);
   }
 
-  const days = Math.round(
-    (Date.UTC(ty, tm - 1, td) - Date.UTC(fy, fm - 1, fd)) / 86400000
-  );
+  const forward = Date.UTC(ty, tm - 1, td) >= Date.UTC(fy, fm - 1, fd);
+  // Work with (earlier, later) so the breakdown is always non-negative.
+  let [ey, em, ed] = forward ? [fy, fm, fd] : [ty, tm, td];
+  let [ly, lm, ld] = forward ? [ty, tm, td] : [fy, fm, fd];
 
-  // Walk the span forward from the earlier date to get a non-negative
-  // years/months/days breakdown, then attach the overall sign to `days`.
-  let [sy, sm, sd] = [fy, fm, fd];
-  let [ey, em, ed] = [ty, tm, td];
+  let years = ly - ey;
+  let months = lm - em;
+  let days = ld - ed;
+
   if (days < 0) {
-    [sy, sm, sd] = [ty, tm, td];
-    [ey, em, ed] = [fy, fm, fd];
-  }
-
-  let years = ey - sy;
-  let months = em - sm;
-  let daysLeft = ed - sd;
-
-  // Borrow until the breakdown is non-negative. A single pass is not enough
-  // when the target day overflows two months at once (e.g. Jan 31 -> Mar 1:
-  // borrowing one month lands on "Feb 31", which still overflows).
-  while (daysLeft < 0) {
     months -= 1;
-    daysLeft += daysInMonth(sy + years, sm + months); // borrow from previous month
+    days += daysInMonth(ly, lm - 1); // borrow from the previous month
   }
-  while (months < 0) {
+  if (months < 0) {
     years -= 1;
     months += 12;
   }
 
+  const totalDays = Math.round(
+    (Date.UTC(ly, lm - 1, ld) - Date.UTC(ey, em - 1, ed)) / 86400000
+  );
+
   return {
-    days,
     years,
     months,
-    daysLeft,
-    formatted: formatSpan(years, months, daysLeft),
+    days,
+    totalDays,
+    direction: forward ? 'forward' : 'backward',
+    formatted: `${years} year${plural(years)}, ${months} month${plural(months)}, ${days} day${plural(days)}`,
   };
 }
 
-/** Human-readable form of a whole-calendar span; "0 days" when empty. */
-function formatSpan(years, months, days) {
-  const parts = [];
-  if (years > 0) parts.push(`${years} year${years === 1 ? '' : 's'}`);
-  if (months > 0) parts.push(`${months} month${months === 1 ? '' : 's'}`);
-  if (days > 0 || parts.length === 0) {
-    parts.push(`${days} day${days === 1 ? '' : 's'}`);
-  }
-  return parts.join(', ');
+function plural(n) {
+  return n === 1 ? '' : 's';
 }
 
-// Local copy — age.js does not export daysInMonth via a stable API surface we
-// want to depend on beyond isValidDate; keeping this private avoids coupling.
-function daysInMonth(y, m) {
-  switch (m) {
-    case 1: case 3: case 5: case 7: case 8: case 10: case 12:
-      return 31;
-    case 4: case 6: case 9: case 11:
-      return 30;
-    case 2:
-      return ((y % 4 === 0 && y % 100 !== 0) || y % 400 === 0) ? 29 : 28;
-    default:
-      return 0;
-  }
-}
-
-module.exports = { dateDiff, formatSpan };
+module.exports = { dateDiff, isValidDate, daysInMonth, isLeapYear };
 
 // CLI entry point: node dateDiff.js YYYY-MM-DD YYYY-MM-DD
 if (require.main === module) {
@@ -114,7 +117,7 @@ if (require.main === module) {
   };
 
   if (args.length < 2) {
-    console.error('Usage: node dateDiff.js <from:YYYY-MM-DD> <to:YYYY-MM-DD>');
+    console.error('Usage: node dateDiff.js <start:YYYY-MM-DD> <end:YYYY-MM-DD>');
     process.exit(1);
   }
 
@@ -131,8 +134,9 @@ if (require.main === module) {
 
   try {
     const diff = dateDiff(f[0], f[1], f[2], t[0], t[1], t[2]);
+    const dir = diff.direction === 'forward' ? 'after' : 'before';
     console.log(`Difference: ${diff.formatted}`);
-    console.log(`Total days: ${diff.days}`);
+    console.log(`Total days: ${diff.totalDays} (${t.join('-')} is ${dir} ${f.join('-')})`);
   } catch (e) {
     console.error(e.message);
     process.exit(1);
