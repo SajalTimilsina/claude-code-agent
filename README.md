@@ -170,3 +170,45 @@ weekday(2024, 8, 20); // -> { index: 2, short: 'Tue', long: 'Tuesday' }
 
 `weekday(y, m, d)` throws a `RangeError` for invalid dates. Helpers exported for
 reuse/testing: `isValidDate`, `daysInMonth`, `isLeapYear`.
+
+## Date Arithmetic
+
+`dateAdd.js` adds or subtracts whole days, months, or years to/from a Gregorian
+(AD) date, with correct calendar rollover:
+
+- **Days** — handles variable month lengths and leap years automatically.
+- **Months / Years** — clamps the day to the last valid day of the target month
+  (e.g. Jan 31 + 1 month → Feb 28/29; Feb 29 + 1 year → Feb 28).
+
+### Usage (CLI)
+
+```bash
+node dateAdd.js <date:YYYY-MM-DD> <unit:d|m|y> <offset>
+```
+
+Examples:
+
+```bash
+$ node dateAdd.js 2024-07-04 d 1
+2024-7-4 +1 d = 2024-07-05
+
+$ node dateAdd.js 2024-01-31 m 1
+2024-1-31 +1 m = 2024-02-29
+
+$ node dateAdd.js 2024-12-31 y 1
+2024-12-31 +1 y = 2025-12-31
+```
+
+### Usage (module)
+
+```js
+const { addDays, addMonths, addYears } = require('./dateAdd.js');
+
+addDays(2024, 12, 31, 1);    // -> { year: 2025, month: 1, day: 1 }
+addMonths(2024, 1, 31, 1);   // -> { year: 2024, month: 2, day: 29 }
+addYears(2024, 2, 29, 1);    // -> { year: 2025, month: 2, day: 28 }
+```
+
+All functions throw a `RangeError` for invalid dates, non-integer offsets, or
+results outside the accepted AD range (1–9999). Helpers exported for
+reuse/testing: `isValidDate`, `daysInMonth`, `isLeapYear`.
