@@ -1,0 +1,11 @@
+{
+  "name": "exact-age",
+  "version": "1.0.0",
+  "description": "Compute a person's exact age (years, months, days) from an AD birthdate.",
+  "main": "age.js",
+  "scripts": {
+    "test": "node --test 'test/*.test.js'"
+  },
+  "keywords": ["age", "birthdate", "calendar"],
+  "license": "MIT"
+}
