@@ -170,3 +170,52 @@ weekday(2024, 8, 20); // -> { index: 2, short: 'Tue', long: 'Tuesday' }
 
 `weekday(y, m, d)` throws a `RangeError` for invalid dates. Helpers exported for
 reuse/testing: `isValidDate`, `daysInMonth`, `isLeapYear`.
+
+## Date String Parser
+
+`dateParser.js` converts human-readable date strings into structured
+`{ year, month, day }` objects. It supports seven common formats:
+
+| Format | Example | Label |
+|---|---|---|
+| ISO 8601 | `2024-07-04` | `iso` |
+| US numeric | `07/04/2024` | `us-numeric` |
+| EU numeric | `04.07.2024` | `eu-numeric` |
+| Long month | `July 4, 2024` | `long-month` |
+| Short month | `Jul 4, 2024` | `short-month` |
+| Day-first long | `4 July 2024` | `day-first-long` |
+| Day-first short | `4 Jul 2024` | `day-first-short` |
+
+### Usage (CLI)
+
+```bash
+node dateParser.js <date-string>
+```
+
+Examples:
+
+```bash
+$ node dateParser.js "2024-07-04"
+Parsed:  2024-07-04
+Format:  iso
+ISO:     2024-07-04
+
+$ node dateParser.js "July 4, 2024"
+Parsed:  2024-07-04
+Format:  long-month
+ISO:     2024-07-04
+```
+
+### Usage (module)
+
+```js
+const { parseDate, isValidDateString, formatDate } = require('./dateParser.js');
+
+parseDate('2024-07-04');        // -> { year: 2024, month: 7, day: 4, format: 'iso' }
+parseDate('July 4, 2024');      // -> { year: 2024, month: 7, day: 4, format: 'long-month' }
+isValidDateString('Feb 30, 2024'); // -> false
+formatDate({ year: 2024, month: 7, day: 4 }); // -> '2024-07-04'
+```
+
+All functions throw a `RangeError` for unrecognized formats or invalid calendar
+dates. Helpers exported for reuse/testing: `isValidDate`, `daysInMonth`, `isLeapYear`.
