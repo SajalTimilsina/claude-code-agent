@@ -170,3 +170,47 @@ weekday(2024, 8, 20); // -> { index: 2, short: 'Tue', long: 'Tuesday' }
 
 `weekday(y, m, d)` throws a `RangeError` for invalid dates. Helpers exported for
 reuse/testing: `isValidDate`, `daysInMonth`, `isLeapYear`.
+
+## Quarter Calculator
+
+`quarter.js` reports which calendar quarter (Q1–Q4) an AD (Gregorian) date falls
+in, the quarter's start and end dates, how many days are in that quarter, and how
+far into the quarter the date is. Q1 is 90 days in a common year and 91 in a leap
+year; the other quarters have fixed lengths (Q2 = 91, Q3 = 92, Q4 = 92).
+
+### Usage (CLI)
+
+```bash
+node quarter.js <date:YYYY-MM-DD>
+```
+
+Examples:
+
+```bash
+$ node quarter.js 2024-08-20
+2024-08-20 is in Q3
+  Span:       2024-07-01 to 2024-09-30
+  Days in Q3: 92
+  Day into Q3: 51
+
+$ node quarter.js 2024-02-29
+2024-02-29 is in Q1
+  Span:       2024-01-01 to 2024-03-31
+  Days in Q1: 91
+  Day into Q1: 60
+```
+
+### Usage (module)
+
+```js
+const { getQuarter } = require('./quarter.js');
+
+getQuarter(2024, 8, 20);
+// -> { quarter: 3, label: 'Q3',
+//      start: { year: 2024, month: 7, day: 1 },
+//      end:   { year: 2024, month: 9, day: 30 },
+//      daysInQuarter: 92, dayIntoQuarter: 51 }
+```
+
+`getQuarter(y, m, d)` throws a `RangeError` for invalid dates. Helpers exported
+for reuse/testing: `isValidDate`, `daysInMonth`, `isLeapYear`.
