@@ -139,34 +139,41 @@ Both functions throw a `RangeError` for invalid dates.
 
 ## Weekday Calculator
 
-`weekday.js` returns the day of the week on which an AD (Gregorian) date falls —
-as a number (`0 = Sunday` … `6 = Saturday`), a short name (`Sun` … `Sat`) and a
-long name (`Sunday` … `Saturday`). It is computed with Zeller's congruence, so
-it works directly on calendar components with no time-zone or epoch arithmetic.
+`weekday.js` determines the day of the week (Sunday–Saturday) for any AD
+(Gregorian) date using the Sakamoto algorithm — a pure integer-arithmetic
+formula with no lookup tables. It also provides helpers for comparing
+weekdays and finding the next occurrence of a given weekday.
 
 ### Usage (CLI)
 
 ```bash
-node weekday.js <date:YYYY-MM-DD>
+node weekday.js <date:YYYY-MM-DD> [--next WEEKDAY_INDEX]
 ```
+
+`WEEKDAY_INDEX` is 0=Sunday through 6=Saturday.
 
 Examples:
 
 ```bash
-$ node weekday.js 2024-08-20
-2024-8-20 was a Tuesday (Tue, index 2)
+$ node weekday.js 2024-07-04
+2024-07-04 is a Thursday (index 4)
 
-$ node weekday.js 1970-01-01
-1970-1-1 was a Thursday (Thu, index 4)
+$ node weekday.js 2024-01-01 --next 2
+2024-01-01 is a Monday (index 1)
+Next Tuesday: in 1 day
 ```
 
 ### Usage (module)
 
 ```js
-const { weekday } = require('./weekday.js');
+const { getWeekday, isSameWeekday, daysUntilNextWeekday } = require('./weekday.js');
 
-weekday(2024, 8, 20); // -> { index: 2, short: 'Tue', long: 'Tuesday' }
+getWeekday(2024, 7, 4);
+// -> { index: 4, name: 'Thursday' }
+
+isSameWeekday(2024, 1, 1, 2024, 1, 8);   // both Mondays -> true
+daysUntilNextWeekday(2024, 1, 1, 2);     // next Tuesday from Monday -> 1
 ```
 
-`weekday(y, m, d)` throws a `RangeError` for invalid dates. Helpers exported for
-reuse/testing: `isValidDate`, `daysInMonth`, `isLeapYear`.
+`getWeekday(y, m, d)` throws a `RangeError` for invalid dates.
+Helpers exported for reuse/testing: `isValidDate`, `daysInMonth`, `isLeapYear`.
