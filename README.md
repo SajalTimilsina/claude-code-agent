@@ -1,10 +1,15 @@
-# Exact Age Calculator
+# Claude Code Agent
 
-A small JavaScript program that takes a birthdate in the AD (Gregorian) calendar
-and returns the person's **exact age** — whole years, months and days — plus the
-total number of days lived.
+A coding agent you talk to through a Slack bot.
 
-## Usage (CLI)
+## Exact Age Calculator
+
+This repo also contains `age.js`, a small dependency-free JavaScript program
+that takes a birthdate in the AD (Gregorian) calendar and returns the person's
+**exact age** — whole years, months and days — plus the total number of days
+lived. See below for usage.
+
+### Usage (CLI)
 
 ```bash
 node age.js <birthdate:YYYY-MM-DD> [reference-date:YYYY-MM-DD]
@@ -20,10 +25,10 @@ Exact age: 34 years, 3 months, 5 days
 Total days: 12561
 
 $ node age.js 2000-02-29          # leap-day birthday, reference = today
-Exact age: ... 
+Exact age: ...
 ```
 
-## Usage (module)
+### Usage (module)
 
 ```js
 const { calculateAge } = require('./age.js');
@@ -41,7 +46,7 @@ dates or when the reference date precedes the birthdate.
 
 Helpers exported for reuse/testing: `isValidDate`, `daysInMonth`, `isLeapYear`.
 
-## Running tests
+### Running tests
 
 Tests use Node's built-in test runner (no dependencies required).
 
