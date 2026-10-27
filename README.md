@@ -170,3 +170,60 @@ weekday(2024, 8, 20); // -> { index: 2, short: 'Tue', long: 'Tuesday' }
 
 `weekday(y, m, d)` throws a `RangeError` for invalid dates. Helpers exported for
 reuse/testing: `isValidDate`, `daysInMonth`, `isLeapYear`.
+
+## Shopify Order Sync
+
+`shopifyOrderSync.js` keeps a local copy of a shop's orders in sync with the
+Shopify Admin REST API. It pulls every order (following pagination), normalizes
+each one into a flat record, and upserts it into a storage adapter — so an
+offline mirror can be refreshed without re-downloading what has not changed.
+
+The module is dependency-free and decoupled: you inject an HTTP client (any
+`fetch`-shaped function) and a storage adapter, which makes it fully testable
+without network access or a database. With no client supplied it falls back to
+the global `fetch`; with no store it uses an in-memory `Map`.
+
+### Usage (module)
+
+```js
+const { syncOrders } = require('./shopifyOrderSync.js');
+
+const result = await syncOrders({
+  shopDomain: 'my-shop.myshopify.com',
+  accessToken: process.env.SHOPIFY_TOKEN,
+  // fetchClient: myCustomFetch,   // optional; defaults to global fetch
+  // store: myAdapter,             // optional; defaults to an in-memory store
+});
+
+// -> { fetched, inserted, updated, unchanged, store }
+result.store.size(); // number of orders now stored
+```
+
+`syncOrders` returns `{ fetched, inserted, updated, unchanged, store }`:
+`inserted` are new orders, `updated` are ones whose `updatedAt` changed, and
+`unchanged` are ones already present and unmodified (skipped, not rewritten).
+It throws an `Error` if the API returns a non-2xx response.
+
+Other exports: `buildOrdersUrl(shopDomain, opts)` builds the paginated
+endpoint URL; `normalizeOrder(raw)` flattens a raw API order; `MemoryStore` is
+the default in-memory adapter (`get` / `set` / `size` / `all` / `clear`).
+
+### Usage (CLI)
+
+```bash
+node shopifyOrderSync.js <shop-domain> <access-token> [--pages N]
+```
+
+Example:
+
+```bash
+$ node shopifyOrderSync.js my-shop.myshopify.com shpat_... --pages 3
+Fetched 120 order(s):
+  inserted:  45
+  updated:   8
+  unchanged: 67
+  stored:    112
+```
+
+Passing `--pages` caps how many pages are fetched (useful for testing); omit it
+to pull every page. The CLI requires Node >= 18 for the built-in `fetch`.
