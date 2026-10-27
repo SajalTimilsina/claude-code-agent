@@ -170,3 +170,57 @@ weekday(2024, 8, 20); // -> { index: 2, short: 'Tue', long: 'Tuesday' }
 
 `weekday(y, m, d)` throws a `RangeError` for invalid dates. Helpers exported for
 reuse/testing: `isValidDate`, `daysInMonth`, `isLeapYear`.
+
+## Shopify Customer Sync
+
+`shopifyCustomerSync.js` prepares customer records for syncing to a Shopify store
+through the Admin API. It is dependency-free (no HTTP client): it normalizes raw
+customer records into Shopify's `Customer` resource shape, validates them against
+Shopify's field constraints, decides what to do with each record (**create** /
+**update** / **skip**) by comparing it against the currently-known Shopify state,
+and builds the exact Admin API requests to send. A real integration feeds the
+output of `planSync` to an HTTP client.
+
+### Usage (CLI)
+
+```bash
+node shopifyCustomerSync.js <records.json> [known-customers.json]
+```
+
+`records.json` is an array of raw customer records; `known-customers.json` is an
+array of customers already in Shopify (matched by `id`, then by `email`).
+
+Examples:
+
+```bash
+$ node shopifyCustomerSync.js records.json known.json
+[0] NO-OP (no changes)
+[1] POST /admin/api/2024-07/customers.json
+        body: {"customer":{"first_name":"New","last_name":"Person","email":"new@p.io"}}
+
+Summary: 2 total, 1 create, 0 update, 1 no-op, 0 error
+```
+
+### Usage (module)
+
+```js
+const { planSync, normalizeCustomer } = require('./shopifyCustomerSync.js');
+
+// Normalize + validate a single record
+normalizeCustomer({ firstName: 'Ada', lastName: 'Lovelace', email: 'ada@b.c' });
+// -> { customer: { first_name: 'Ada', last_name: 'Lovelace', email: 'ada@b.c' }, errors: [] }
+
+// Plan a full sync against known Shopify customers
+planSync(
+  [{ first_name: 'New', last_name: 'Person', email: 'n@p.io' }],
+  [], // known customers
+);
+// -> { items: [{ status: 'ok', action: 'create', request: { method: 'POST', path: '/admin/api/2024-07/customers.json', ... } }],
+//      summary: { total: 1, create: 1, update: 0, none: 0, error: 0 } }
+```
+
+Supported fields: `first_name`, `last_name` (required), plus `email`, `phone`,
+`company`, `note`, `tax_exempt`, and `tags` (array or comma-separated string).
+Records are matched to existing Shopify customers by `id` when present, otherwise
+by `email`. `planSync(rawRecords, known?, opts?)` throws a `RangeError` if
+`rawRecords` is not an array.
