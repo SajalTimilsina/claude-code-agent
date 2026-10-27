@@ -170,3 +170,54 @@ weekday(2024, 8, 20); // -> { index: 2, short: 'Tue', long: 'Tuesday' }
 
 `weekday(y, m, d)` throws a `RangeError` for invalid dates. Helpers exported for
 reuse/testing: `isValidDate`, `daysInMonth`, `isLeapYear`.
+
+## Shopify Product Fetch
+
+`shopifyProductFetch.js` helps an integration read products from a Shopify store
+through the Admin API. It is dependency-free (no HTTP client): it builds the exact
+REST requests to send — a single product by id/handle, or a paginated list with
+filters and field selection — and parses/normalizes the raw JSON responses into
+clean, predictable records. A real integration feeds the output of
+`buildProductRequest` / `buildProductListRequest` to an HTTP client and passes each
+response through `parseProducts`.
+
+### Usage (CLI)
+
+```bash
+node shopifyProductFetch.js <response.json> [--list]
+```
+
+`--list` treats the input as a `/products.json` list response; without it, the
+input is treated as a single product object.
+
+Examples:
+
+```bash
+$ node shopifyProductFetch.js products.json --list
+1  Widget (1 variants)
+     price: 8 - 12
+     tags:  sale, new
+2  Gizmo (0 variants)
+
+Parsed 2 product(s).
+```
+
+### Usage (module)
+
+```js
+const { buildProductListRequest, parseProducts } = require('./shopifyProductFetch.js');
+
+// Build a request for the first page of Acme's products, selecting specific fields
+buildProductListRequest({ limit: 50, fields: ['id', 'title'], vendor: 'Acme' });
+// -> { method: 'GET', path: '/admin/api/2024-07/products.json',
+//      query: { fields: 'id,title', limit: 50, vendor: 'Acme' } }
+
+// Parse + normalize a response body
+parseProducts({ products: [{ id: 99, title: 'Widget', price_min: '8.00', price_max: '12.00', ... }] });
+// -> [ { id: 99, title: 'Widget', priceRange: { min: 8, max: 12 }, variantCount: ..., ... } ]
+```
+
+Supported list filters include `limit`, `fields`, `ids`, `created_at_min/max`,
+`updated_at_min/max`, `title`, `vendor`, `product_type`, `status`, `published_at*`,
+and cursor pagination via `after` / `before`. `buildProductListRequest` throws a
+`RangeError` if `limit` is outside 1–250.
